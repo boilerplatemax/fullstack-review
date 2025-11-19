@@ -41,9 +41,10 @@ const App = () => {
       const updatedPerson = {...existingContact,number:newNumber}
       
       if(existingContact.number&&!window.confirm('Are you sure you want to edit an existing phone number?')) return
-      personService.editContact(updatedPerson).then(updatedPerson => {
-      setPersons(persons.map(p => p.id === updatedPerson.id ? updatedPerson : p))
+      personService.editContact(updatedPerson).then(savedPerson => {
+    setPersons(persons.map(p => p.id === savedPerson.id ? savedPerson : p))
   })
+
     }
     else{
       const newPerson={name:newName,number:newNumber}
