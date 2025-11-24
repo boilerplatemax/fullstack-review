@@ -65,7 +65,11 @@ const App = () => {
       personService.addContact(newPerson).then((response) => {
         setPersons((prevPersons) => [...prevPersons, response]);
         displayNotification({content:`${response.name} has been added`, type:'added'});
-      });
+      })
+      .catch(error=>{
+        const message = error?.response?.data?.error || "Unknown error"
+        displayNotification({content:message,type:'error'})
+      })
     }
 
     setNewName("");
@@ -90,7 +94,7 @@ const App = () => {
 
 
       setMessage(null);
-    }, 5000);
+    }, 10000);
   };
 
   if (!persons) { 
