@@ -1,10 +1,14 @@
+require('dotenv').config()
+
 const express = require('express')
 const morgan = require('morgan')
-
 const app = express()
+const Person = require('./models/person')
+
 
 app.use(express.static('dist'))
 app.use(express.json())
+
 
 let persons = [
     { 
@@ -41,34 +45,40 @@ app.get('/info', (request, response) => {
 })
 
 app.get('/api/persons', (request, response) => {
-  response.json(persons)
+  Person.find({}).then(p=>{
+    response.json(p)
+  })
 })
 
-app.get('/api/persons/:id', (request, response)=>{
-    const id = request.params.id
-    const person = persons.find(p=>p.id===id)
-    if(person){
-        response.json(person)
-    }
-    else{
-        response.status(404).end()
-    }
-})
+app.get('/api/persons/:id', (request, response) => {
+  Person.findById(request.params.id)
+    .then(person => {
+      if (person) {
+        response.json(person);
+      } else {
+        response.status(404).end();
+      }
+    })
+     .catch(error => {
+      console.log(error)
+      response.status(500).end()
+    })
+});
 
 const generateId = () => {
   return Math.floor(Math.random() * 999999).toString()
 }
 
-app.post('/api/persons',((request, response)=>{
-const body = request.body
-
-if (!body.name || !body.number) {
+app.post('/api/persons', (request, response)=>{
+  const body = request.body
+  
+  if (!body.name || !body.number) {
     return response.status(400).json({ 
       error: 'name or number missing' 
     })
   }
-
-const existingPerson = persons.find(
+  
+  const existingPerson = Person.find({}).then(
   p => p.name.toLowerCase() === body.name.toLowerCase()
 )
 
@@ -77,19 +87,17 @@ if (existingPerson) {
   return response.status(400).json({ error: 'name already in the system' })
 }
 
-
-
-const person ={
+const person = new Person({
     name:body.name,
     number: body.number,
     id: generateId(),
-}
+})
 
-persons=persons.concat(person)
+person.save().then(savedPerson=>{
+  response.json(savedPerson)
+})
 
-response.json(person)
-
-}))
+})
 
 app.delete('/api/persons/:id',(request, response)=>{
     const id = request.params.id
