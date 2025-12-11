@@ -37,7 +37,9 @@ const LoginForm = ({ loginUser }) => {
     console.log(loginCredentials)
 
     const success = await loginUser(loginCredentials)
-    if (success) setLoginCredentials({ username: "", password: "" })
+    if (success) {
+      setLoginCredentials({ username: "", password: "" })
+    }
   }
   return (
     <form onSubmit={(e) => handleLogin(e)}>
@@ -71,15 +73,27 @@ const App = () => {
     blogService.getAll().then((blogs) => setBlogs(blogs))
   }, [])
 
+  useEffect(() => {
+    const loggedUserJSON = window.localStorage.getItem("loggedBlogAppUser")
+    if (loggedUserJSON) {
+      const user = JSON.parse(loggedUserJSON)
+      blogService.setToken(user.token)
+      setUser(user)
+    }
+  }, [])
+
   const loginUser = async (loginCredentials) => {
     try {
       const user = await loginService.login(loginCredentials)
       blogService.setToken(user.token)
       setUser(user)
+      localStorage.setItem("loggedBlogAppUser", `${JSON.stringify(user)}`)
+      return true
     } catch (error) {
       //handleError(error)
       handleNotification(error.response.data.error, "error")
       console.log(error)
+      return false
     }
   }
 
@@ -94,15 +108,30 @@ const App = () => {
     )
   }
 
+  const handleLogOut = () => {
+    window.localStorage.removeItem("loggedBlogAppUser")
+    setUser(null)
+  }
+
+  if (user === null) {
+    return <LoginForm loginUser={loginUser} />
+  }
   return (
     <div>
-      <h2>blogs</h2>
+      <div
+        style={{
+          justifyContent: "space-between",
+          display: "flex",
+          minWidth: "300px",
+        }}
+      >
+        <h2>blogs</h2>
+        <button onClick={handleLogOut}>logout</button>
+      </div>
+
       <Notification notification={notification} />
-      {user === null ? (
-        <LoginForm loginUser={loginUser} />
-      ) : (
-        <Blogs blogs={blogs} />
-      )}
+
+      <Blogs blogs={blogs} />
     </div>
   )
 }
