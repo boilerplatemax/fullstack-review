@@ -1,66 +1,9 @@
 import { useState, useEffect } from "react"
-import Blog from "./components/Blog"
+import BlogPage from "./components/BlogPage"
+import LoginForm from "./components/LoginForm"
 import blogService from "./services/blogs"
 import loginService from "./services/login"
 import Notification from "./components/Notification"
-
-const Blogs = ({ blogs }) => {
-  return (
-    <>
-      {blogs.map((blog) => (
-        <Blog key={blog.id} blog={blog} />
-      ))}
-    </>
-  )
-}
-
-const LoginForm = ({ loginUser }) => {
-  const [loginCredentials, setLoginCredentials] = useState({
-    username: "",
-    password: "",
-  })
-
-  const handleCredentialsChange = (e) => {
-    e.preventDefault()
-    //const name =event.target.name & const value = event.target.value
-    const { name, value } = e.target
-    setLoginCredentials((loginCredentials) => ({
-      ...loginCredentials,
-      [name]: value,
-    }))
-    console.log(`${name}: ${value}`)
-  }
-
-  //hint this will become async
-  const handleLogin = async (e) => {
-    e.preventDefault()
-    console.log(loginCredentials)
-
-    const success = await loginUser(loginCredentials)
-    if (success) {
-      setLoginCredentials({ username: "", password: "" })
-    }
-  }
-  return (
-    <form onSubmit={(e) => handleLogin(e)}>
-      username
-      <input
-        type="text"
-        name="username"
-        value={loginCredentials.username}
-        onChange={handleCredentialsChange}
-      />
-      password
-      <input
-        type="text"
-        name="password"
-        value={loginCredentials.password}
-        onChange={handleCredentialsChange}
-      />
-      <button type="submit">Login</button>
-    </form>
-  )
-}
 
 const App = () => {
   const [blogs, setBlogs] = useState([])
@@ -90,8 +33,8 @@ const App = () => {
       localStorage.setItem("loggedBlogAppUser", `${JSON.stringify(user)}`)
       return true
     } catch (error) {
-      //handleError(error)
-      handleNotification(error.response.data.error, "error")
+      handleError(error)
+
       console.log(error)
       return false
     }
@@ -113,25 +56,39 @@ const App = () => {
     setUser(null)
   }
 
-  if (user === null) {
-    return <LoginForm loginUser={loginUser} />
+  const createBlog = async (newBlogData) => {
+    try {
+      const saved = await blogService.create(newBlogData)
+      setBlogs(blogs.concat(saved))
+      handleNotification(
+        `Added a new blog titled ${saved.title} by ${saved.author}`,
+        "success"
+      )
+    } catch (error) {
+      handleError(error)
+    }
   }
+
+  const handleError = (error) => {
+    if (error.response.data.error) {
+      handleNotification(error.response.data.error, "error")
+    } else {
+      handleNotification("unknown error", "error")
+    }
+  }
+
   return (
     <div>
-      <div
-        style={{
-          justifyContent: "space-between",
-          display: "flex",
-          minWidth: "300px",
-        }}
-      >
-        <h2>blogs</h2>
-        <button onClick={handleLogOut}>logout</button>
-      </div>
-
       <Notification notification={notification} />
-
-      <Blogs blogs={blogs} />
+      {!user ? (
+        <LoginForm loginUser={loginUser} />
+      ) : (
+        <BlogPage
+          blogs={blogs}
+          handleLogOut={handleLogOut}
+          createBlog={createBlog}
+        />
+      )}
     </div>
   )
 }
